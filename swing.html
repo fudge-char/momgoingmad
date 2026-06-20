@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Coming Soon</title>
+  <title>I Did It!</title>
   <style>
     * {
       margin: 0;
@@ -27,12 +27,14 @@
     .graphic {
       font-size: 6rem;
       margin-bottom: 1.5rem;
-      animation: bob 2s ease-in-out infinite;
+      display: inline-block;
+      animation: swing 1.5s ease-in-out infinite;
+      transform-origin: top center;
     }
 
-    @keyframes bob {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+    @keyframes swing {
+      0%, 100% { transform: rotate(-15deg); }
+      50% { transform: rotate(15deg); }
     }
 
     .text {
@@ -43,7 +45,7 @@
       margin-top: 0.75rem;
     }
 
-    .link {
+    .back {
       display: inline-block;
       margin-top: 2rem;
       font-size: 1.5rem;
@@ -52,17 +54,17 @@
       letter-spacing: 0.1em;
     }
 
-    .link:hover {
+    .back:hover {
       color: #ffffff;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="graphic">🧠💡🙇</div>
-    <div class="text">Refay = genius.</div>
-    <div class="text">Fudge = humbled. Problem solved. Thank you!</div>
-    <a class="link" href="swing.html">See what I did →</a>
+    <div class="graphic">🌳😄</div>
+    <div class="text">I did it!</div>
+    <br>
+    <a class="back" href="index.html">← Go back</a>
   </div>
 </body>
 </html>

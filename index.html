@@ -24,26 +24,31 @@
       text-align: center;
     }
 
-    h1 {
-      font-size: 3rem;
+    .graphic {
+      font-size: 6rem;
+      margin-bottom: 1.5rem;
+      animation: bob 2s ease-in-out infinite;
+    }
+
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .text {
+      font-size: 1.5rem;
       color: #ffffff;
       letter-spacing: 0.1em;
       font-weight: 400;
-    }
-
-    p {
-      margin-top: 1rem;
-      color: #888;
-      font-size: 1rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
+      margin-top: 0.75rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Website Coming Soon</h1>
-    <p>Something exciting is on the way</p>
+    <div class="graphic">🧠💡🙇</div>
+    <div class="text">Refay = genius.</div>
+    <div class="text">Fudge = humbled. Problem solved. Thank you!</div>
   </div>
 </body>
 </html>

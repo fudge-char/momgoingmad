@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pick a Branch!</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #1a2e1a;
+      font-family: 'Georgia', serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    h1 {
+      color: #ffffff;
+      font-size: 2rem;
+      letter-spacing: 0.15em;
+      margin-bottom: 2rem;
+      font-weight: 400;
+    }
+
+    .game-area {
+      position: relative;
+      width: 700px;
+      height: 350px;
+    }
+
+    .branch {
+      position: absolute;
+      font-size: 5rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+      user-select: none;
+    }
+
+    .branch:hover {
+      transform: scale(1.15);
+    }
+
+    .branch.clicked {
+      animation: shake 0.3s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-10deg); }
+      75% { transform: rotate(10deg); }
+    }
+
+    #branch-left  { left: 30px;  top: 80px; }
+    #branch-right { right: 30px; top: 80px; }
+
+    #monkey {
+      position: absolute;
+      font-size: 4rem;
+      transition: left 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+                  top  0.4s ease-in;
+      bottom: 80px;
+      left: 310px;
+    }
+
+    .banana {
+      position: absolute;
+      font-size: 2rem;
+      pointer-events: none;
+      animation: fly 1s ease-out forwards;
+    }
+
+    @keyframes fly {
+      0%   { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+      100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(360deg); }
+    }
+
+    .hint {
+      color: #aaa;
+      font-size: 1rem;
+      margin-top: 2rem;
+      letter-spacing: 0.1em;
+    }
+
+    .back {
+      display: inline-block;
+      margin-top: 1.5rem;
+      font-size: 1rem;
+      color: #666;
+      text-decoration: none;
+      letter-spacing: 0.1em;
+    }
+
+    .back:hover { color: #fff; }
+  </style>
+</head>
+<body>
+
+  <h1>🌿 Pick a Branch! 🌿</h1>
+
+  <div class="game-area" id="game">
+    <div class="branch" id="branch-left"  onclick="pickBranch('left')">🌳</div>
+    <div class="branch" id="branch-right" onclick="pickBranch('right')">🌳</div>
+    <div id="monkey">🐒</div>
+  </div>
+
+  <p class="hint">Click a branch to send the monkey flying!</p>
+  <a class="back" href="swing.html">← Go back</a>
+
+  <script>
+    const monkey = document.getElementById('monkey');
+    const game   = document.getElementById('game');
+    let busy = false;
+
+    const positions = {
+      left:   { left: '60px',  top: '90px' },
+      right:  { left: '560px', top: '90px' },
+      center: { left: '310px', top: '180px' }
+    };
+
+    function pickBranch(side) {
+      if (busy) return;
+      busy = true;
+
+      const branch = document.getElementById('branch-' + side);
+      branch.classList.add('clicked');
+      setTimeout(() => branch.classList.remove('clicked'), 300);
+
+      // arc up through center then land on branch
+      monkey.style.top  = '120px';
+      monkey.style.left = '310px';
+
+      setTimeout(() => {
+        monkey.style.left = positions[side].left;
+        monkey.style.top  = positions[side].top;
+      }, 200);
+
+      setTimeout(() => {
+        throwBananas(side);
+        busy = false;
+      }, 1000);
+    }
+
+    function throwBananas(side) {
+      const rect = game.getBoundingClientRect();
+      const monkeyEl = monkey.getBoundingClientRect();
+      const cx = monkeyEl.left - rect.left + 30;
+      const cy = monkeyEl.top  - rect.top  + 30;
+
+      for (let i = 0; i < 8; i++) {
+        const b = document.createElement('div');
+        b.classList.add('banana');
+        b.textContent = '🍌';
+        const angle = (i / 8) * 2 * Math.PI;
+        const dist  = 80 + Math.random() * 60;
+        b.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+        b.style.setProperty('--dy', Math.sin(angle) * dist - 40 + 'px');
+        b.style.left = cx + 'px';
+        b.style.top  = cy + 'px';
+        b.style.position = 'absolute';
+        game.appendChild(b);
+        setTimeout(() => b.remove(), 1000);
+      }
+    }
+  </script>
+</body>
+</html>

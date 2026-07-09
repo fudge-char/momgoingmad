@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bug and Feature Tracker</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --border: #dcdfe4;
+    --text: #1c2333;
+    --text-soft: #5b657a;
+    --accent: #2455d6;
+    --accent-soft: #e8eefc;
+    --critical: #c0182b;
+    --critical-bg: #fdebed;
+    --high: #c2570a;
+    --high-bg: #fdf0e5;
+    --medium: #8a6d00;
+    --medium-bg: #fbf4d9;
+    --low: #5b657a;
+    --low-bg: #eef0f3;
+    --pending: #5b657a;
+    --pending-bg: #eef0f3;
+    --progress: #2455d6;
+    --progress-bg: #e8eefc;
+    --resolved: #1c7a3d;
+    --resolved-bg: #e5f5eb;
+    --bug: #b02a37;
+    --bug-bg: #fbeaec;
+    --feature: #4a3ab8;
+    --feature-bg: #edeafb;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  button { font: inherit; cursor: pointer; }
+  select, input[type=text], input[type=search], textarea {
+    font: inherit; color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); padding: 6px 8px;
+  }
+  select:focus-visible, input:focus-visible, button:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 16px 20px 80px; }
+
+  /* Header */
+  .page-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .page-head h1 { font-size: 20px; margin: 0; flex: 1; }
+  .who { display: flex; align-items: center; gap: 6px; color: var(--text-soft); font-size: 13px; }
+  .btn {
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius);
+    padding: 7px 14px; font-weight: 600; color: var(--text);
+  }
+  .btn:hover { background: #f0f2f6; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #1c46b8; }
+  .btn-sm { padding: 3px 9px; font-size: 12.5px; font-weight: 500; }
+  .btn-danger { color: var(--critical); }
+
+  .global-counts { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 8px 16px; min-width: 108px;
+  }
+  .stat .n { font-size: 21px; font-weight: 700; display: block; }
+  .stat .l { font-size: 12px; color: var(--text-soft); }
+  .stat.crit .n { color: var(--critical); }
+  .stat.prog .n { color: var(--progress); }
+
+  /* Area table */
+  .area-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 14px;
+  }
+  .area-panel summary {
+    cursor: pointer; padding: 9px 14px; font-weight: 600; font-size: 13px;
+    color: var(--text-soft); user-select: none;
+  }
+  .area-tables { display: flex; gap: 0; flex-wrap: wrap; padding: 0 6px 8px; }
+  .area-tables table { flex: 1; min-width: 300px; border-collapse: collapse; font-size: 13px; }
+  .area-tables th, .area-tables td { padding: 4px 10px; text-align: right; }
+  .area-tables th:first-child, .area-tables td:first-child { text-align: left; }
+  .area-tables th { color: var(--text-soft); font-weight: 600; border-bottom: 1px solid var(--border); }
+  .area-tables tbody tr { cursor: pointer; }
+  .area-tables tbody tr:hover { background: var(--accent-soft); }
+  .area-tables td.zero { color: #aab1bf; }
+
+  /* Filter bar */
+  .filters {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 12px; margin-bottom: 6px;
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .filters label { font-size: 12px; color: var(--text-soft); display: flex; align-items: center; gap: 5px; }
+  .filters input[type=search] { min-width: 200px; flex: 1; max-width: 300px; }
+  .views { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; padding: 0 2px; }
+  .views .vlabel { font-size: 12px; color: var(--text-soft); margin-right: 2px; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 99px;
+    padding: 3px 12px; font-size: 12.5px;
+  }
+  .chip:hover { background: var(--accent-soft); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Groups & rows */
+  .group { margin-bottom: 4px; }
+  .group-head {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); padding: 8px 4px 6px;
+    font-weight: 700; font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .group-head .gcount { font-weight: 600; color: var(--text-soft); }
+  .group-head button.gtoggle {
+    border: none; background: none; padding: 2px 4px; color: var(--text-soft); font-size: 11px;
+  }
+  .group-head .gline { flex: 1; height: 1px; background: var(--border); }
+  .rows { display: flex; flex-direction: column; gap: 4px; }
+
+  .row {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .row-main {
+    display: grid;
+    grid-template-columns: 62px minmax(200px, 1fr) 150px 78px 74px 96px 110px 32px;
+    gap: 8px; align-items: center; padding: 7px 10px;
+  }
+  .row-sub { color: var(--text-soft); font-size: 12px; }
+  .badge {
+    display: inline-block; padding: 1px 7px; border-radius: 4px;
+    font-size: 11.5px; font-weight: 700; white-space: nowrap;
+  }
+  .badge.bug { color: var(--bug); background: var(--bug-bg); }
+  .badge.feature { color: var(--feature); background: var(--feature-bg); }
+  .badge.critical { color: var(--critical); background: var(--critical-bg); }
+  .badge.high { color: var(--high); background: var(--high-bg); }
+  .badge.medium { color: var(--medium); background: var(--medium-bg); }
+  .badge.low { color: var(--low); background: var(--low-bg); }
+  .badge.pending { color: var(--pending); background: var(--pending-bg); }
+  .badge.inprogress { color: var(--progress); background: var(--progress-bg); }
+  .badge.resolved { color: var(--resolved); background: var(--resolved-bg); }
+  .cell-desc .d { font-weight: 600; }
+  .cell-area, .cell-owner { font-size: 12.5px; color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .evidence { font-size: 11.5px; color: var(--text-soft); white-space: nowrap; }
+  .evidence .has-img { color: var(--accent); font-weight: 600; }
+  .expander {
+    border: 1px solid var(--border); background: var(--surface); border-radius: 4px;
+    width: 26px; height: 26px; line-height: 1; color: var(--text-soft); font-size: 12px;
+  }
+  .expander[aria-expanded="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+  .row-detail { border-top: 1px solid var(--border); padding: 12px 14px; display: none; }
+  .row.expanded .row-detail { display: block; }
+  .detail-cols { display: flex; gap: 20px; flex-wrap: wrap; }
+  .shot-box { flex: 0 0 auto; max-width: 380px; }
+  .shot-box img.thumb { max-width: 100%; border: 1px solid var(--border); border-radius: 4px; cursor: zoom-in; display: block; }
+  .shot-meta { font-size: 11.5px; color: var(--text-soft); margin-top: 4px; }
+  .no-shot { font-size: 12.5px; color: var(--text-soft); font-style: italic; }
+  .log-box { flex: 1; min-width: 240px; }
+  .log-box h4 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-soft); }
+  .log-list { list-style: none; margin: 0; padding: 0; font-size: 12.5px; }
+  .log-list li { padding: 3px 0; border-bottom: 1px dashed #edeff3; display: flex; gap: 8px; }
+  .log-list .lt { color: var(--text-soft); white-space: nowrap; }
+  .detail-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .seg button { border: none; background: var(--surface); padding: 5px 12px; font-size: 12.5px; border-right: 1px solid var(--border); }
+  .seg button:last-child { border-right: none; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; font-weight: 600; }
+
+  .empty { text-align: center; color: var(--text-soft); padding: 40px 0; }
+
+  /* Drawer */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(20,26,40,0.4); z-index: 40; display: none;
+  }
+  .overlay.open { display: block; }
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(430px, 100vw); z-index: 50;
+    background: var(--surface); border-left: 1px solid var(--border);
+    box-shadow: -8px 0 24px rgba(20,26,40,0.15);
+    transform: translateX(105%); transition: transform 0.18s ease; overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+  }
+  .drawer-head h2 { margin: 0; font-size: 16px; }
+  .drawer form { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 4px; }
+  .field select, .field input[type=text] { width: 100%; }
+  .field .hint { font-size: 11.5px; color: var(--text-soft); margin-top: 3px; }
+  .field .hint.warn { color: var(--critical); }
+  .segfield { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .segfield button { flex: 1; border: none; background: var(--surface); padding: 7px 0; border-right: 1px solid var(--border); }
+  .segfield button:last-child { border-right: none; }
+  .segfield button[aria-pressed="true"] { background: var(--accent); color: #fff; font-weight: 600; }
+  .pastezone {
+    border: 2px dashed var(--border); border-radius: var(--radius); padding: 18px 12px;
+    text-align: center; color: var(--text-soft); font-size: 13px; cursor: pointer;
+  }
+  .pastezone.dragover { border-color: var(--accent); background: var(--accent-soft); }
+  .pastezone img { max-width: 100%; max-height: 160px; border-radius: 4px; display: block; margin: 0 auto 6px; }
+  .form-err { color: var(--critical); font-size: 12.5px; min-height: 16px; }
+  .drawer-actions { display: flex; gap: 8px; padding-top: 4px; }
+  .drawer-actions .btn { flex: 1; }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed; inset: 0; z-index: 60; background: rgba(10,14,24,0.82);
+    display: none; align-items: center; justify-content: center; padding: 24px; cursor: zoom-out;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 95vw; max-height: 92vh; border-radius: 4px; }
+
+  @media (max-width: 860px) {
+    .row-main { grid-template-columns: 56px 1fr 80px 32px; }
+    .cell-area, .cell-owner, .cell-status-col, .evidence { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page-head">
+    <h1>Bug and Feature Tracker</h1>
+    <span class="who">
+      <label for="currentUser">Viewing as</label>
+      <select id="currentUser" aria-label="Current user">
+        <option>Fudge</option><option>Refay</option><option>Duncan</option><option>Penman</option>
+      </select>
+    </span>
+    <button class="btn" id="exportBtn">Export</button>
+    <button class="btn btn-primary" id="newBtn">+ New item</button>
+  </header>
+
+  <section class="global-counts" id="globalCounts" aria-label="Global open counts"></section>
+
+  <details class="area-panel" open>
+    <summary>Open counts by area</summary>
+    <div class="area-tables" id="areaTables"></div>
+  </details>
+
+  <section class="filters" aria-label="Filters">
+    <input type="search" id="fSearch" placeholder="Search description or ID..." aria-label="Search description">
+    <label>Type
+      <select id="fType"><option>All</option><option>Bug</option><option>Feature</option></select>
+    </label>
+    <label>Priority
+      <select id="fPriority"><option>All</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+    </label>
+    <label>Owner
+      <select id="fOwner"><option>All</option><option>Fudge</option><option>Refay</option><option>Duncan</option><option>Penman</option></select>
+    </label>
+    <label>Status
+      <select id="fStatus">
+        <option>Open</option><option>All</option><option>Pending</option><option>In Progress</option><option>Resolved</option>
+      </select>
+    </label>
+    <label>Area <select id="fArea"><option>All</option></select></label>
+    <label>Group by
+      <select id="fGroup"><option>Priority</option><option>Owner</option><option>Type</option><option>Status</option><option>Area</option></select>
+    </label>
+    <label>Sort
+      <select id="fSort"><option>Priority</option><option>Newest updated</option><option>Oldest created</option></select>
+    </label>
+    <button class="btn btn-sm" id="clearBtn">Clear filters</button>
+  </section>
+
+  <div class="views" role="group" aria-label="Saved views">
+    <span class="vlabel">Saved views:</span>
+    <button class="chip" data-view="mine">My open items</button>
+    <button class="chip" data-view="bugs">Bugs only</button>
+    <button class="chip" data-view="features">Features only</button>
+    <button class="chip" data-view="resolvedweek">Resolved this week</button>
+  </div>
+
+  <main id="list" aria-live="polite"></main>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+  <div class="drawer-head">
+    <h2 id="drawerTitle">New item</h2>
+    <button class="btn btn-sm" id="drawerClose" aria-label="Close drawer">✕</button>
+  </div>
+  <form id="itemForm" novalidate>
+    <div class="field">
+      <label id="typeLabel">Type</label>
+      <div class="segfield" role="group" aria-labelledby="typeLabel" id="typeSeg">
+        <button type="button" data-val="Bug" aria-pressed="true">Bug</button>
+        <button type="button" data-val="Feature" aria-pressed="false">Feature</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="inDesc">Description</label>
+      <input type="text" id="inDesc" maxlength="50" required autocomplete="off">
+      <div class="hint" id="descCount">50 characters left</div>
+    </div>
+    <div class="field">
+      <label for="inArea">Area</label>
+      <select id="inArea" required><option value="">Select area...</option></select>
+    </div>
+    <div class="field">
+      <label for="inPriority">Priority</label>
+      <select id="inPriority" required>
+        <option value="">Select priority...</option>
+        <option>Critical</option><option>High</option><option>Medium</option><option>Low</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="inOwner">Owner</label>
+      <select id="inOwner" required>
+        <option value="">Select owner...</option>
+        <option>Fudge</option><option>Refay</option><option>Duncan</option><option>Penman</option>
+      </select>
+    </div>
+    <div class="field">
+      <label id="statusLabel">Status</label>
+      <div class="segfield" role="group" aria-labelledby="statusLabel" id="statusSeg">
+        <button type="button" data-val="Pending" aria-pressed="true">Pending</button>
+        <button type="button" data-val="In Progress" aria-pressed="false">In Progress</button>
+        <button type="button" data-val="Resolved" aria-pressed="false">Resolved</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Screenshot (optional)</label>
+      <div class="pastezone" id="pastezone" tabindex="0" role="button"
+           aria-label="Paste screenshot here, click to upload, or drag an image into this box">
+        <span id="pastezoneMsg">Paste screenshot here<br>or drag an image into this box<br><u>or click to upload</u></span>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" hidden>
+    </div>
+    <div class="form-err" id="formErr" role="alert"></div>
+    <div class="drawer-actions">
+      <button type="button" class="btn" id="cancelBtn">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="saveBtn">Save item</button>
+    </div>
+  </form>
+</aside>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-label="Screenshot full view">
+  <img id="lightboxImg" alt="Screenshot full size">
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Constants ---------- */
+const AREAS = [
+  ["Dashboard","DA"],["Net Worth","NW"],["Portfolio","PO"],["Performance & Income","PI"],
+  ["Financial","FN"],["Property","PR"],["Estate & Entities","EE"],["Contacts","CO"],
+  ["Taxes","TX"],["Insurance","IN"],["All Files","AF"],["Profit & Loss","PL"],
+  ["Balance Sheet","BS"],["Cash Flow","CF"],["Ledger","LG"],["Analysis","AN"]
+];
+const AREA_NAMES = AREAS.map(a => a[0]);
+const AREA_PREFIX = Object.fromEntries(AREAS);
+const PRIORITIES = ["Critical","High","Medium","Low"];
+const OWNERS = ["Fudge","Refay","Duncan","Penman"];
+const STATUSES = ["Pending","In Progress","Resolved"];
+const PRIO_RANK = { Critical:0, High:1, Medium:2, Low:3 };
+const LS_ITEMS = "tracker.items.v1";
+const LS_PREFS = "tracker.prefs.v1";
+
+/* ---------- State ---------- */
+let items = [];
+let expanded = new Set();
+let collapsedGroups = new Set();
+let editingId = null;
+let draftShot = null; // {thumb, full, createdAt, uploadedBy} | "REMOVE" | null
+let activeView = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- Persistence ---------- */
+function saveItems() {
+  try { localStorage.setItem(LS_ITEMS, JSON.stringify(items)); }
+  catch (e) { console.warn("Could not save to localStorage (likely quota):", e); }
+}
+function loadItems() {
+  try {
+    const raw = localStorage.getItem(LS_ITEMS);
+    if (raw) { items = JSON.parse(raw); return true; }
+  } catch (e) { console.warn("Could not load items:", e); }
+  return false;
+}
+function savePrefs() {
+  const prefs = { currentUser: $("currentUser").value };
+  try { localStorage.setItem(LS_PREFS, JSON.stringify(prefs)); } catch (e) {}
+}
+function loadPrefs() {
+  try {
+    const p = JSON.parse(localStorage.getItem(LS_PREFS) || "{}");
+    if (p.currentUser && OWNERS.includes(p.currentUser)) $("currentUser").value = p.currentUser;
+  } catch (e) {}
+}
+
+/* ---------- IDs ---------- */
+function nextId(area) {
+  const prefix = AREA_PREFIX[area] || "XX";
+  let max = 1000;
+  for (const it of items) {
+    if (it.id.startsWith(prefix + "-")) {
+      const n = parseInt(it.id.slice(prefix.length + 1), 10);
+      if (!isNaN(n) && n > max) max = n;
+    }
+  }
+  return prefix + "-" + (max + 1);
+}
+
+/* ---------- Seed data ---------- */
+function makeFakeShot(title, accent) {
+  const c = document.createElement("canvas");
+  c.width = 800; c.height = 480;
+  const g = c.getContext("2d");
+  g.fillStyle = "#f6f7f9"; g.fillRect(0, 0, 800, 480);
+  g.fillStyle = accent; g.fillRect(0, 0, 800, 54);
+  g.fillStyle = "#ffffff"; g.font = "bold 20px sans-serif";
+  g.fillText(title, 20, 34);
+  for (let i = 0; i < 6; i++) {
+    g.fillStyle = "#ffffff";
+    g.fillRect(20, 80 + i * 62, 760, 48);
+    g.strokeStyle = "#dcdfe4"; g.strokeRect(20, 80 + i * 62, 760, 48);
+    g.fillStyle = "#c3c9d4";
+    g.fillRect(36, 96 + i * 62, 220 + (i % 3) * 90, 14);
+    g.fillStyle = i === 2 ? "#c0182b" : "#8a93a5";
+    g.fillRect(640, 96 + i * 62, 110, 14);
+  }
+  const full = c.toDataURL("image/jpeg", 0.75);
+  const t = document.createElement("canvas");
+  t.width = 320; t.height = 192;
+  t.getContext("2d").drawImage(c, 0, 0, 320, 192);
+  const thumb = t.toDataURL("image/jpeg", 0.7);
+  return { thumb, full };
+}
+
+function seedItems() {
+  // [type, description, area, priority, owner, status, daysAgoCreated, daysAgoUpdated, shot?]
+  const rows = [
+    ["Bug","Payment confirm button hangs","Dashboard","Critical","Fudge","Pending",1,1,["Dashboard — Payments","#2455d6"]],
+    ["Bug","Widget totals stale after refresh","Dashboard","High","Refay","In Progress",6,2],
+    ["Feature","Add customizable widget layout","Dashboard","Medium","Penman","Pending",12,12],
+    ["Bug","Net worth chart mislabels quarters","Net Worth","High","Duncan","Pending",4,4],
+    ["Bug","Liabilities double-counted in total","Net Worth","Critical","Refay","In Progress",2,1,["Net Worth — Summary","#1c7a3d"]],
+    ["Feature","Add net worth trend export","Net Worth","Low","Fudge","Pending",18,18],
+    ["Bug","Holdings table sort resets on scroll","Portfolio","Medium","Penman","Pending",9,9],
+    ["Bug","Dividend yield shows NaN for new lots","Portfolio","High","Duncan","In Progress",5,2],
+    ["Feature","Benchmark comparison overlay","Portfolio","Medium","Refay","Resolved",20,3],
+    ["Bug","YTD return ignores mid-year deposits","Performance & Income","Critical","Duncan","Pending",3,3],
+    ["Feature","Income calendar monthly view","Performance & Income","Medium","Fudge","In Progress",14,4],
+    ["Bug","Income chart tooltip off by one month","Performance & Income","Low","Penman","Resolved",21,5],
+    ["Bug","Balance total miscalculates","Financial","High","Refay","In Progress",7,1,["Financial — Accounts","#c2570a"]],
+    ["Bug","Rounding issue on summary row","Financial","Medium","Refay","Pending",7,7],
+    ["Feature","Multi-currency account support","Financial","High","Duncan","Pending",16,16],
+    ["Feature","Add bulk property import","Property","Critical","Penman","In Progress",8,2],
+    ["Bug","Property photos rotate on upload","Property","Medium","Fudge","Pending",10,10],
+    ["Bug","Occupancy rate stuck at 0%","Property","High","Duncan","Resolved",15,2],
+    ["Bug","Entity tree collapses on save","Estate & Entities","Medium","Refay","Pending",11,11],
+    ["Feature","Ownership percentage validation","Estate & Entities","High","Duncan","Pending",13,13],
+    ["Bug","Trust documents open blank tab","Estate & Entities","High","Fudge","In Progress",6,3],
+    ["Bug","Duplicate contacts after CSV import","Contacts","Medium","Penman","Pending",9,9],
+    ["Feature","Contact tagging and smart lists","Contacts","Low","Refay","Pending",22,22],
+    ["Bug","Phone format breaks intl numbers","Contacts","Low","Duncan","Resolved",25,10],
+    ["Bug","K-1 upload fails over 10MB","Taxes","Critical","Duncan","In Progress",2,1,["Taxes — Documents","#4a3ab8"]],
+    ["Bug","Estimated tax dates off by one day","Taxes","High","Fudge","Pending",5,5],
+    ["Feature","Tax lot harvesting suggestions","Taxes","Medium","Penman","Pending",17,17],
+    ["Bug","Policy renewal alerts never fire","Insurance","High","Refay","Pending",4,4],
+    ["Feature","Coverage gap analysis view","Insurance","Medium","Duncan","Pending",19,19],
+    ["Bug","Premium schedule shows wrong year","Insurance","Low","Fudge","Resolved",23,6],
+    ["Bug","Preview fails for scanned PDFs","All Files","High","Penman","In Progress",6,2],
+    ["Bug","Folder rename drops permissions","All Files","Critical","Refay","Pending",1,1],
+    ["Feature","Full-text search inside documents","All Files","High","Duncan","Pending",15,15],
+    ["Bug","P&L subtotals ignore date filter","Profit & Loss","High","Fudge","Pending",8,8],
+    ["Feature","Compare P&L across entities","Profit & Loss","Medium","Refay","Pending",18,18],
+    ["Bug","Export to XLSX drops footnotes","Profit & Loss","Low","Penman","Resolved",24,4],
+    ["Bug","Balance sheet won't load for Q1","Balance Sheet","Critical","Duncan","Pending",2,2],
+    ["Bug","Retained earnings rounding drift","Balance Sheet","Medium","Refay","In Progress",12,3],
+    ["Feature","Side-by-side period comparison","Balance Sheet","Medium","Fudge","Pending",14,14],
+    ["Bug","Recurring transfers counted twice","Cash Flow","High","Penman","In Progress",7,2],
+    ["Feature","Cash flow forecast 12 months out","Cash Flow","High","Duncan","Pending",16,16],
+    ["Bug","Chart legend overlaps on mobile","Cash Flow","Low","Refay","Resolved",26,6],
+    ["Bug","Ledger search misses memo field","Ledger","Medium","Fudge","Pending",10,10],
+    ["Bug","Split transactions lose category","Ledger","High","Refay","Pending",5,5],
+    ["Feature","Keyboard-first ledger entry mode","Ledger","Medium","Duncan","Resolved",20,2],
+    ["Bug","Scenario builder freezes on save","Analysis","Critical","Penman","In Progress",3,1],
+    ["Feature","Monte Carlo retirement simulator","Analysis","High","Duncan","Pending",21,21],
+    ["Bug","Allocation pie ignores cash bucket","Analysis","Medium","Fudge","Resolved",19,5]
+  ];
+  items = [];
+  for (const r of rows) {
+    const [type, desc, area, priority, owner, status, dc, du, shotSpec] = r;
+    const created = new Date(Date.now() - dc * 864e5 - Math.random() * 6e6).toISOString();
+    const updated = new Date(Date.now() - du * 864e5).toISOString();
+    const id = nextId(area);
+    const log = [{ at: created, actor: owner, action: "Created issue" }];
+    let screenshot = null;
+    if (shotSpec) {
+      const s = makeFakeShot(shotSpec[0], shotSpec[1]);
+      screenshot = { thumb: s.thumb, full: s.full, createdAt: created, uploadedBy: owner };
+      log.push({ at: created, actor: owner, action: "Attached screenshot" });
+    }
+    const it = { id, type, description: desc, area, priority, owner, status,
+                 screenshot, log, createdAt: created, updatedAt: updated };
+    if (status === "In Progress") log.push({ at: updated, actor: owner, action: "Status changed to In Progress" });
+    if (status === "Resolved") {
+      log.push({ at: updated, actor: owner, action: "Status changed to Resolved" });
+      it.resolvedAt = updated; it.resolvedBy = owner;
+    }
+    items.push(it);
+  }
+  saveItems();
+}
+
+/* ---------- Filtering / sorting ---------- */
+function currentFilters() {
+  return {
+    search: $("fSearch").value.trim().toLowerCase(),
+    type: $("fType").value,
+    priority: $("fPriority").value,
+    owner: $("fOwner").value,
+    status: $("fStatus").value,
+    area: $("fArea").value,
+    groupBy: $("fGroup").value,
+    sort: $("fSort").value
+  };
+}
+function isOpen(it) { return it.status === "Pending" || it.status === "In Progress"; }
+
+function filteredItems(f) {
+  let out = items.filter(it => {
+    if (f.type !== "All" && it.type !== f.type) return false;
+    if (f.priority !== "All" && it.priority !== f.priority) return false;
+    if (f.owner !== "All" && it.owner !== f.owner) return false;
+    if (f.area !== "All" && it.area !== f.area) return false;
+    if (f.status === "Open") { if (!isOpen(it)) return false; }
+    else if (f.status !== "All" && it.status !== f.status) return false;
+    if (f.search && !(it.description.toLowerCase().includes(f.search) || it.id.toLowerCase().includes(f.search))) return false;
+    return true;
+  });
+  if (activeView === "resolvedweek") {
+    const weekAgo = Date.now() - 7 * 864e5;
+    out = out.filter(it => it.status === "Resolved" && new Date(it.updatedAt).getTime() >= weekAgo);
+  }
+  return out;
+}
+
+function sortItems(arr, mode) {
+  const byPrio = (a, b) => PRIO_RANK[a.priority] - PRIO_RANK[b.priority];
+  const byUpdatedDesc = (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt);
+  const byCreatedAsc = (a, b) => new Date(a.createdAt) - new Date(b.createdAt);
+  if (mode === "Newest updated") arr.sort(byUpdatedDesc);
+  else if (mode === "Oldest created") arr.sort(byCreatedAsc);
+  else arr.sort((a, b) => byPrio(a, b) || byUpdatedDesc(a, b));
+  return arr;
+}
+
+function groupKeys(groupBy) {
+  switch (groupBy) {
+    case "Priority": return PRIORITIES;
+    case "Owner": return OWNERS;
+    case "Type": return ["Bug","Feature"];
+    case "Status": return STATUSES;
+    case "Area": return AREA_NAMES;
+  }
+}
+function groupValue(it, groupBy) {
+  return { Priority: it.priority, Owner: it.owner, Type: it.type, Status: it.status, Area: it.area }[groupBy];
+}
+
+/* ---------- Rendering ---------- */
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
+         d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+function slugClass(s) { return s.toLowerCase().replace(/\s+/g, ""); }
+
+function renderGlobalCounts() {
+  const open = items.filter(isOpen);
+  const stats = [
+    ["Open", open.length, ""],
+    ["Bugs", open.filter(i => i.type === "Bug").length, ""],
+    ["Features", open.filter(i => i.type === "Feature").length, ""],
+    ["Critical", open.filter(i => i.priority === "Critical").length, "crit"],
+    ["In Progress", open.filter(i => i.status === "In Progress").length, "prog"]
+  ];
+  $("globalCounts").innerHTML = stats.map(([l, n, cls]) =>
+    `<div class="stat ${cls}"><span class="n">${n}</span><span class="l">${l}</span></div>`).join("");
+}
+
+function renderAreaTables() {
+  const half = Math.ceil(AREA_NAMES.length / 2);
+  const mkRows = names => names.map(a => {
+    const open = items.filter(i => i.area === a && isOpen(i));
+    const bugs = open.filter(i => i.type === "Bug").length;
+    const feats = open.filter(i => i.type === "Feature").length;
+    const z = n => n === 0 ? ' class="zero"' : "";
+    return `<tr data-area="${esc(a)}" tabindex="0" role="button" aria-label="Filter by ${esc(a)}">
+      <td>${esc(a)}</td><td${z(open.length)}>${open.length}</td><td${z(bugs)}>${bugs}</td><td${z(feats)}>${feats}</td></tr>`;
+  }).join("");
+  const head = "<thead><tr><th>Area</th><th>Open</th><th>Bugs</th><th>Features</th></tr></thead>";
+  $("areaTables").innerHTML =
+    `<table>${head}<tbody>${mkRows(AREA_NAMES.slice(0, half))}</tbody></table>` +
+    `<table>${head}<tbody>${mkRows(AREA_NAMES.slice(half))}</tbody></table>`;
+}
+
+function evidenceHtml(it) {
+  const imgs = it.screenshot ? 1 : 0;
+  const logs = it.log.length;
+  const imgPart = imgs ? `<span class="has-img">${imgs} image</span>` : "no image";
+  return `${imgPart} · ${logs} log${logs === 1 ? "" : "s"}`;
+}
+
+function rowHtml(it) {
+  const isExp = expanded.has(it.id);
+  const shot = it.screenshot;
+  const detail = `
+    <div class="row-detail">
+      <div class="detail-cols">
+        <div class="shot-box">
+          ${shot
+            ? `<img class="thumb" src="${shot.thumb}" data-id="${esc(it.id)}"
+                   alt="Screenshot for ${esc(it.id)}" title="Click to view full size">
+               <div class="shot-meta">Uploaded by ${esc(shot.uploadedBy || "unknown")} · ${fmtDate(shot.createdAt)}</div>`
+            : `<div class="no-shot">No screenshot attached</div>`}
+        </div>
+        <div class="log-box">
+          <h4>Activity log</h4>
+          <ul class="log-list">
+            ${it.log.slice().reverse().map(l =>
+              `<li><span class="lt">${fmtDate(l.at)}</span><span>${esc(l.actor)}: ${esc(l.action)}</span></li>`).join("")}
+          </ul>
+        </div>
+      </div>
+      <div class="detail-actions">
+        <span class="seg" role="group" aria-label="Change status for ${esc(it.id)}">
+          ${STATUSES.map(s =>
+            `<button data-act="status" data-id="${esc(it.id)}" data-status="${esc(s)}"
+                     aria-pressed="${it.status === s}">${s}</button>`).join("")}
+        </span>
+        <button class="btn btn-sm" data-act="edit" data-id="${esc(it.id)}">Edit</button>
+        <button class="btn btn-sm btn-danger" data-act="delete" data-id="${esc(it.id)}">Delete</button>
+      </div>
+    </div>`;
+  return `
+  <article class="row ${isExp ? "expanded" : ""}" data-id="${esc(it.id)}">
+    <div class="row-main">
+      <span class="badge ${it.type.toLowerCase()}">${it.type}</span>
+      <span class="cell-desc"><span class="d">${esc(it.description)}</span>
+        <div class="row-sub">${esc(it.id)} · updated ${fmtDate(it.updatedAt)}</div></span>
+      <span class="cell-area">${esc(it.area)}</span>
+      <span><span class="badge ${slugClass(it.priority)}">${it.priority}</span></span>
+      <span class="cell-owner">${esc(it.owner)}</span>
+      <span class="cell-status-col"><span class="badge ${slugClass(it.status)}">${it.status}</span></span>
+      <span class="evidence">${evidenceHtml(it)}</span>
+      <button class="expander" data-act="expand" data-id="${esc(it.id)}"
+              aria-expanded="${isExp}" aria-label="Expand screenshot and log for ${esc(it.id)}">${isExp ? "▲" : "▼"}</button>
+    </div>
+    ${detail}
+  </article>`;
+}
+
+function renderList() {
+  const f = currentFilters();
+  const arr = filteredItems(f);
+  if (arr.length === 0) {
+    $("list").innerHTML = `<div class="empty">No items match the current filters.</div>`;
+    return;
+  }
+  const keys = groupKeys(f.groupBy);
+  const groups = new Map(keys.map(k => [k, []]));
+  for (const it of arr) groups.get(groupValue(it, f.groupBy)).push(it);
+  let html = "";
+  for (const k of keys) {
+    const g = groups.get(k);
+    if (!g.length) continue;
+    sortItems(g, f.sort);
+    const collapsed = collapsedGroups.has(k);
+    const color = f.groupBy === "Priority" ? `style="color: var(--${slugClass(k)})"` : "";
+    html += `
+    <section class="group">
+      <div class="group-head">
+        <button class="gtoggle" data-act="grouptoggle" data-group="${esc(k)}"
+                aria-expanded="${!collapsed}" aria-label="${collapsed ? "Expand" : "Collapse"} group ${esc(k)}">
+          ${collapsed ? "►" : "▼"}</button>
+        <span ${color}>${esc(k)}</span><span class="gcount">${g.length}</span>
+        <span class="gline"></span>
+      </div>
+      ${collapsed ? "" : `<div class="rows">${g.map(rowHtml).join("")}</div>`}
+    </section>`;
+  }
+  $("list").innerHTML = html;
+}
+
+function render() {
+  renderGlobalCounts();
+  renderAreaTables();
+  renderList();
+  document.querySelectorAll(".views .chip").forEach(c =>
+    c.classList.toggle("active", c.dataset.view === activeView));
+}
+
+/* ---------- Mutations ---------- */
+function findItem(id) { return items.find(i => i.id === id); }
+function touch(it) { it.updatedAt = new Date().toISOString(); }
+function addLog(it, action) {
+  it.log.push({ at: new Date().toISOString(), actor: $("currentUser").value, action });
+}
+
+function setStatus(id, status) {
+  const it = findItem(id);
+  if (!it || it.status === status) return;
+  if (status === "In Progress" && !it.owner) { alert("Moving to In Progress requires an owner."); return; }
+  const prev = it.status;
+  it.status = status;
+  if (status === "Resolved") {
+    it.resolvedAt = new Date().toISOString();
+    it.resolvedBy = $("currentUser").value;
+    addLog(it, "Status changed to Resolved");
+  } else if (prev === "Resolved") {
+    addLog(it, `Reopened to ${status}`);
+    delete it.resolvedAt; delete it.resolvedBy;
+  } else {
+    addLog(it, `Status changed to ${status}`);
+  }
+  touch(it); saveItems(); render();
+}
+
+function deleteItem(id) {
+  const it = findItem(id);
+  if (!it) return;
+  if (!confirm(`Delete ${it.id} — "${it.description}"? This cannot be undone.`)) return;
+  items = items.filter(i => i.id !== id);
+  expanded.delete(id);
+  saveItems(); render();
+}
+
+/* ---------- Drawer ---------- */
+function segValue(segId) {
+  return $(segId).querySelector('button[aria-pressed="true"]').dataset.val;
+}
+function setSeg(segId, val) {
+  $(segId).querySelectorAll("button").forEach(b =>
+    b.setAttribute("aria-pressed", String(b.dataset.val === val)));
+}
+
+function openDrawer(id) {
+  editingId = id || null;
+  draftShot = null;
+  $("formErr").textContent = "";
+  $("drawerTitle").textContent = editingId ? `Edit ${editingId}` : "New item";
+  const it = editingId ? findItem(editingId) : null;
+  setSeg("typeSeg", it ? it.type : "Bug");
+  setSeg("statusSeg", it ? it.status : "Pending");
+  $("inDesc").value = it ? it.description : "";
+  $("inArea").value = it ? it.area : "";
+  $("inPriority").value = it ? it.priority : "";
+  $("inOwner").value = it ? it.owner : "";
+  updateDescCount();
+  renderPastezone(it && it.screenshot ? it.screenshot : null);
+  $("overlay").classList.add("open");
+  $("drawer").classList.add("open");
+  $("inDesc").focus();
+}
+function closeDrawer() {
+  $("overlay").classList.remove("open");
+  $("drawer").classList.remove("open");
+  editingId = null; draftShot = null;
+}
+
+function updateDescCount() {
+  const left = 50 - $("inDesc").value.length;
+  const el = $("descCount");
+  el.textContent = `${left} character${left === 1 ? "" : "s"} left`;
+  el.classList.toggle("warn", left <= 5);
+}
+
+function renderPastezone(existingShot) {
+  const zone = $("pastezone");
+  const shot = draftShot && draftShot !== "REMOVE" ? draftShot
+             : (draftShot === "REMOVE" ? null : existingShot);
+  if (shot) {
+    zone.innerHTML = `<img src="${shot.thumb}" alt="Screenshot preview">
+      <span>Screenshot attached — paste or drop to replace, or
+      <button type="button" class="btn btn-sm" id="removeShot">Remove</button></span>`;
+  } else {
+    zone.innerHTML = `<span>Paste screenshot here<br>or drag an image into this box<br><u>or click to upload</u></span>`;
+  }
+}
+
+function compressImage(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = (w, maxW) => Math.min(1, maxW / w);
+      const draw = (maxW, q) => {
+        const s = scale(img.width, maxW);
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * s);
+        c.height = Math.round(img.height * s);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        return c.toDataURL("image/jpeg", q);
+      };
+      resolve({ full: draw(1400, 0.8), thumb: draw(360, 0.72) });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read image")); };
+    img.src = url;
+  });
+}
+
+async function acceptImage(blob) {
+  if (!blob || !blob.type.startsWith("image/")) return;
+  try {
+    const { full, thumb } = await compressImage(blob);
+    draftShot = { full, thumb, createdAt: new Date().toISOString(), uploadedBy: $("currentUser").value };
+    renderPastezone(null);
+  } catch (e) {
+    $("formErr").textContent = "Could not process that image.";
+  }
+}
+
+function saveForm(e) {
+  e.preventDefault();
+  const desc = $("inDesc").value.trim();
+  const area = $("inArea").value, priority = $("inPriority").value, owner = $("inOwner").value;
+  const type = segValue("typeSeg"), status = segValue("statusSeg");
+  const errs = [];
+  if (!desc) errs.push("Description is required.");
+  if (desc.length > 50) errs.push("Description cannot exceed 50 characters.");
+  if (!area) errs.push("Area is required.");
+  if (!priority) errs.push("Priority is required.");
+  if (!owner) errs.push("Owner is required.");
+  if (status === "In Progress" && !owner) errs.push("Moving to In Progress requires an owner.");
+  if (errs.length) { $("formErr").textContent = errs[0]; return; }
+
+  const now = new Date().toISOString();
+  const user = $("currentUser").value;
+  if (editingId) {
+    const it = findItem(editingId);
+    if (!it) { closeDrawer(); return; }
+    if (it.status !== status) {
+      if (status === "Resolved") { it.resolvedAt = now; it.resolvedBy = user; addLog(it, "Status changed to Resolved"); }
+      else if (it.status === "Resolved") { addLog(it, `Reopened to ${status}`); delete it.resolvedAt; delete it.resolvedBy; }
+      else addLog(it, `Status changed to ${status}`);
+    }
+    if (it.owner !== owner) addLog(it, `Owner changed from ${it.owner} to ${owner}`);
+    if (it.priority !== priority) addLog(it, `Priority changed from ${it.priority} to ${priority}`);
+    if (it.description !== desc || it.area !== area || it.type !== type) addLog(it, "Edited details");
+    if (draftShot === "REMOVE" && it.screenshot) { it.screenshot = null; addLog(it, "Removed screenshot"); }
+    else if (draftShot && draftShot !== "REMOVE") { it.screenshot = draftShot; addLog(it, "Attached screenshot"); }
+    Object.assign(it, { type, description: desc, area, priority, owner, status });
+    touch(it);
+  } else {
+    const it = {
+      id: nextId(area), type, description: desc, area, priority, owner, status,
+      screenshot: draftShot && draftShot !== "REMOVE" ? draftShot : null,
+      log: [{ at: now, actor: user, action: "Created issue" }],
+      createdAt: now, updatedAt: now
+    };
+    if (it.screenshot) it.log.push({ at: now, actor: user, action: "Attached screenshot" });
+    if (status === "In Progress") it.log.push({ at: now, actor: user, action: "Status changed to In Progress" });
+    if (status === "Resolved") {
+      it.resolvedAt = now; it.resolvedBy = user;
+      it.log.push({ at: now, actor: user, action: "Status changed to Resolved" });
+    }
+    items.push(it);
+  }
+  saveItems(); closeDrawer(); render();
+}
+
+/* ---------- Saved views ---------- */
+function applyView(v) {
+  activeView = activeView === v ? null : v;
+  $("fSearch").value = "";
+  $("fType").value = "All"; $("fPriority").value = "All";
+  $("fOwner").value = "All"; $("fArea").value = "All"; $("fStatus").value = "Open";
+  if (activeView === "mine") $("fOwner").value = $("currentUser").value;
+  else if (activeView === "bugs") $("fType").value = "Bug";
+  else if (activeView === "features") $("fType").value = "Feature";
+  else if (activeView === "resolvedweek") $("fStatus").value = "Resolved";
+  render();
+}
+
+function clearFilters() {
+  activeView = null;
+  $("fSearch").value = "";
+  $("fType").value = "All"; $("fPriority").value = "All"; $("fOwner").value = "All";
+  $("fStatus").value = "Open"; $("fArea").value = "All";
+  $("fGroup").value = "Priority"; $("fSort").value = "Priority";
+  render();
+}
+
+/* ---------- Export ---------- */
+function exportJson() {
+  const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "tracker-export-" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ---------- Events ---------- */
+function init() {
+  // Populate area selects
+  for (const a of AREA_NAMES) {
+    $("fArea").insertAdjacentHTML("beforeend", `<option>${esc(a)}</option>`);
+    $("inArea").insertAdjacentHTML("beforeend", `<option>${esc(a)}</option>`);
+  }
+  loadPrefs();
+  if (!loadItems() || !items.length) seedItems();
+
+  $("newBtn").addEventListener("click", () => openDrawer(null));
+  $("exportBtn").addEventListener("click", exportJson);
+  $("clearBtn").addEventListener("click", clearFilters);
+  $("drawerClose").addEventListener("click", closeDrawer);
+  $("cancelBtn").addEventListener("click", closeDrawer);
+  $("overlay").addEventListener("click", closeDrawer);
+  $("itemForm").addEventListener("submit", saveForm);
+  $("inDesc").addEventListener("input", updateDescCount);
+  $("currentUser").addEventListener("change", () => { savePrefs(); if (activeView === "mine") applyView("mine"); });
+
+  for (const id of ["fType","fPriority","fOwner","fStatus","fArea","fGroup","fSort"])
+    $(id).addEventListener("change", () => { activeView = null; render(); });
+  $("fSearch").addEventListener("input", () => { activeView = null; renderList(); });
+
+  document.querySelectorAll(".views .chip").forEach(c =>
+    c.addEventListener("click", () => applyView(c.dataset.view)));
+
+  // Segmented controls in drawer
+  for (const segId of ["typeSeg","statusSeg"]) {
+    $(segId).addEventListener("click", e => {
+      const b = e.target.closest("button[data-val]");
+      if (b) setSeg(segId, b.dataset.val);
+    });
+  }
+
+  // Area table click-to-filter
+  $("areaTables").addEventListener("click", e => {
+    const tr = e.target.closest("tr[data-area]");
+    if (tr) { $("fArea").value = tr.dataset.area; activeView = null; render(); }
+  });
+  $("areaTables").addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") {
+      const tr = e.target.closest("tr[data-area]");
+      if (tr) { e.preventDefault(); $("fArea").value = tr.dataset.area; activeView = null; render(); }
+    }
+  });
+
+  // List actions (delegated)
+  $("list").addEventListener("click", e => {
+    const b = e.target.closest("[data-act]");
+    if (b) {
+      const { act, id } = b.dataset;
+      if (act === "expand") {
+        expanded.has(id) ? expanded.delete(id) : expanded.add(id);
+        renderList();
+      } else if (act === "grouptoggle") {
+        const g = b.dataset.group;
+        collapsedGroups.has(g) ? collapsedGroups.delete(g) : collapsedGroups.add(g);
+        renderList();
+      } else if (act === "status") setStatus(id, b.dataset.status);
+      else if (act === "edit") openDrawer(id);
+      else if (act === "delete") deleteItem(id);
+      return;
+    }
+    const img = e.target.closest("img.thumb[data-id]");
+    if (img) {
+      const it = findItem(img.dataset.id);
+      if (it && it.screenshot) {
+        $("lightboxImg").src = it.screenshot.full;
+        $("lightbox").classList.add("open");
+      }
+    }
+  });
+
+  $("lightbox").addEventListener("click", () => $("lightbox").classList.remove("open"));
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") {
+      if ($("lightbox").classList.contains("open")) $("lightbox").classList.remove("open");
+      else if ($("drawer").classList.contains("open")) closeDrawer();
+    }
+  });
+
+  // Screenshot intake: paste (when drawer open), click-to-upload, drag-drop
+  document.addEventListener("paste", e => {
+    if (!$("drawer").classList.contains("open")) return;
+    for (const item of e.clipboardData.items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        acceptImage(item.getAsFile());
+        return;
+      }
+    }
+  });
+  const zone = $("pastezone");
+  zone.addEventListener("click", e => {
+    if (e.target.id === "removeShot") { draftShot = "REMOVE"; renderPastezone(null); return; }
+    $("fileInput").click();
+  });
+  zone.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("fileInput").click(); }
+  });
+  $("fileInput").addEventListener("change", e => {
+    if (e.target.files[0]) acceptImage(e.target.files[0]);
+    e.target.value = "";
+  });
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("dragover"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault(); zone.classList.remove("dragover");
+    if (e.dataTransfer.files[0]) acceptImage(e.dataTransfer.files[0]);
+  });
+
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
